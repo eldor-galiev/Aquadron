@@ -1,21 +1,19 @@
 package org.example.domain;
 
+import lombok.AllArgsConstructor;
 import org.apache.commons.math3.analysis.function.Atan;
 import org.apache.commons.math3.exception.DimensionMismatchException;
 import org.apache.commons.math3.exception.MaxCountExceededException;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.linear.LUDecomposition;
+import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
 import org.apache.commons.math3.ode.FirstOrderIntegrator;
 import org.apache.commons.math3.ode.nonstiff.ClassicalRungeKuttaIntegrator;
 
+@AllArgsConstructor
 public class ODEFunction implements FirstOrderDifferentialEquations {
     private final Aquadron aquadron;
-
-    public ODEFunction(Aquadron aquadron) {
-        this.aquadron = aquadron;
-    }
 
     @Override
     public int getDimension() {
@@ -24,16 +22,24 @@ public class ODEFunction implements FirstOrderDifferentialEquations {
 
     @Override
     public void computeDerivatives(double t, double[] y, double[] yDot) throws MaxCountExceededException, DimensionMismatchException {
-        aquadron.recalculateMatrices();
+        RealMatrix Y = new Array2DRowRealMatrix(new double[] {y[0], y[1], y[2]});
+        RealMatrix X = new Array2DRowRealMatrix(new double[] {y[3], y[4], y[5]});
+
+        RealMatrix R = aquadron.recalculateMatrixR(y[2]);
+        RealMatrix Fd = aquadron.recalculateMatrixFd(y[3], y[4], y[5]);
+
+        RealMatrix M = aquadron.getM();
+        RealMatrix Bu = aquadron.getBu();
+        RealMatrix Fv = aquadron.getFv();
 
         RealMatrix A1RA3 = new Array2DRowRealMatrix(new double[][] {{0, 0, 1}, {1, 0, 0}});
 
-        RealMatrix U = (inverseMatrix(A1RA3.multiply(aquadron.getM()).multiply(aquadron.getBu()))).scalarMultiply(-1)
-                .multiply(A1RA3.multiply(aquadron.getM()).multiply(aquadron.getFd().add(aquadron.getFv()))
-                        .add(calculateErrorMatrix()));
+        RealMatrix U = (MatrixUtils.inverse(A1RA3.multiply(M).multiply(Bu))).scalarMultiply(-1)
+                .multiply(A1RA3.multiply(M).multiply(Fd.add(Fv))
+                        .add(calculateErrorMatrix(Y, X)));
 
-        RealMatrix newY = aquadron.getR().multiply(aquadron.getX());
-        RealMatrix newX = aquadron.getM().multiply(aquadron.getBu().multiply(U).add(aquadron.getFd()).add(aquadron.getFv()));
+        RealMatrix newY = R.multiply(X);
+        RealMatrix newX = M.multiply(Bu.multiply(U).add(Fd).add(Fv));
 
         yDot[0] = newY.getEntry(0,0);
         yDot[1] = newY.getEntry(1,0);
@@ -43,36 +49,19 @@ public class ODEFunction implements FirstOrderDifferentialEquations {
         yDot[4] = newX.getEntry(1,0);
         yDot[5] = newX.getEntry(2,0);
 
-        aquadron.setY(aquadron.getR().multiply(aquadron.getX()));
-        aquadron.setX(aquadron.getM().multiply(aquadron.getBu().multiply(U).add(aquadron.getFd()).add(aquadron.getFv())));
-
-        yDot[0] = aquadron.getX().getEntry(0,0);
-        yDot[1] = aquadron.getX().getEntry(1,0);
-        yDot[2] = aquadron.getX().getEntry(2,0);
-
-        yDot[3] = aquadron.getY().getEntry(0,0);
-        yDot[4] = aquadron.getY().getEntry(1,0);
-        yDot[5] = aquadron.getY().getEntry(2,0);
-
     }
 
-    private RealMatrix inverseMatrix(RealMatrix matrix) {
-        LUDecomposition lu = new LUDecomposition(matrix);
-        matrix = lu.getSolver().getInverse();
-
-        return matrix;
-    }
-
-    private RealMatrix calculateErrorMatrix() {
+    private RealMatrix calculateErrorMatrix(RealMatrix Y, RealMatrix X) {
         double T1 = 25;
         double T2 = 10;
         double T3 = 5;
 
-        calculateDesiredY();
+        double desiredY3 = calculateDesiredY3(Y);
 
-        double Etr = aquadron.getY().getEntry(2, 0) - aquadron.getYDesired().getEntry(2, 0);
-        double EtrDot = aquadron.getX().getEntry(2, 0);
-        double Esp = aquadron.getX().getEntry(0, 0) - aquadron.getXDesired().getEntry(2, 0);
+        double Etr = Y.getEntry(2, 0) - desiredY3;
+        double EtrDot = X.getEntry(2, 0);
+
+        double Esp = X.getEntry(0, 0) - aquadron.getSpeed();
 
         double [] errors = new double[2];
         errors[0] = T2 * EtrDot + T1 * Etr;
@@ -82,16 +71,19 @@ public class ODEFunction implements FirstOrderDifferentialEquations {
     }
 
 
-    private void calculateDesiredY() {
-        double y10 = aquadron.getYDesired().getEntry(0, 0);
-        double y1 = aquadron.getY().getEntry(0, 0);
-        double y20 = aquadron.getYDesired().getEntry(1, 0);
-        double y2 = aquadron.getY().getEntry(1, 0);
+    private double calculateDesiredY3(RealMatrix Y) {
+        double y10 = aquadron.getTargetPoint()[0];
+        double y1 = Y.getEntry(0, 0);
+        double y20 = aquadron.getTargetPoint()[1];
+        double y2 = Y.getEntry(1, 0);
 
+        return  -1 * new Atan().value((y20 - y2) / (y10 - y1));
+    }
+
+    private double calculateDeltaY3() {
         double Txi = 10.0;
         double beta0 = 1.0;
-        double xi0 = 0.0;
-
+        double xi0 = 1.0;
         FirstOrderDifferentialEquations ode = new FirstOrderDifferentialEquations() {
             @Override
             public int getDimension() {
@@ -108,10 +100,9 @@ public class ODEFunction implements FirstOrderDifferentialEquations {
         double[] xiInitial = {xi0};
         double[] xiFinal = new double[1];
 
-        FirstOrderIntegrator integrator = new ClassicalRungeKuttaIntegrator(1) {
-        };
-        integrator.integrate(ode, 0.0, xiInitial, 1.0, xiFinal);
+        FirstOrderIntegrator integrator = new ClassicalRungeKuttaIntegrator(0.001);
+        integrator.integrate(ode, 0.0, xiInitial, 10.0, xiFinal);
 
-        aquadron.getYDesired().setEntry(2, 0, -1 * new Atan().value((y20 - y2) / (y10 - y1)) + Math.max(-Math.PI / 2, Math.min(xiFinal[0], Math.PI / 2)));
+        return Math.max(-Math.PI / 2, Math.min(xiFinal[0], Math.PI / 2));
     }
 }
