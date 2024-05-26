@@ -1,4 +1,4 @@
-package org.example.domain;
+package org.example.views;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -7,7 +7,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-public class AquadronInitializationRequest  {
+public class DronInitializationRequest  {
     private double[] coordsY;
     private double[] coordsX;
     private double weight;

@@ -1,4 +1,4 @@
-package org.example.domain;
+package org.example.models;
 
 import lombok.AllArgsConstructor;
 import org.apache.commons.math3.analysis.function.Atan;
@@ -61,7 +61,7 @@ public class ODEFunction implements FirstOrderDifferentialEquations {
         double Etr = Y.getEntry(2, 0) - desiredY3;
         double EtrDot = X.getEntry(2, 0);
 
-        double Esp = X.getEntry(0, 0) - aquadron.getSpeed();
+        double Esp = X.getEntry(0, 0) - aquadron.getTargetSpeed();
 
         double [] errors = new double[2];
         errors[0] = T2 * EtrDot + T1 * Etr;

@@ -1,9 +1,10 @@
-package org.example.api;
+package org.example.controllers;
 
 import lombok.RequiredArgsConstructor;
-import org.example.domain.Aquadron;
-import org.example.domain.AquadronInitializationRequest;
-import org.example.domain.SimulationResults;
+import org.example.models.Aquadron;
+import org.example.views.DronInitializationRequest;
+import org.example.views.DronState;
+import org.example.views.SimulationResults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,12 +12,12 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/aquadron")
+@RequestMapping("/aquadron")
 public class ControlApi {
     private Aquadron aquadron;
 
     @PostMapping("/create")
-    public void start(@RequestBody AquadronInitializationRequest request) {
+    public void create(@RequestBody DronInitializationRequest request) {
         this.aquadron = new Aquadron(
                 request.getCoordsY(),
                 request.getCoordsX(),
@@ -33,29 +34,25 @@ public class ControlApi {
         double t = 100.0;
         double step = 0.01;
 
+        targetSpeed = aquadron.getY().getEntry(0,0) <= targetY1 ? targetSpeed : - targetSpeed;
+
         aquadron.setTargetPoint(new double[] {targetY1, targetY2});
-        aquadron.setSpeed(targetSpeed);
+        aquadron.setTargetSpeed(targetSpeed);
 
         List<double[]> states = aquadron.simulate(t, step).stream()
                 .map(array -> new double[]{array[0], array[1], array[2], array[3]})
                 .toList();
-        double[][] coordinates = states.stream()
-                .map(arr -> new double[]{arr[0], arr[1]})
-                .toArray(double[][]::new);
-        double[] speed = states.stream()
-                .map(array ->  array[2]).toList().stream().mapToDouble(Double::doubleValue).toArray();
-        double[] angle = states.stream()
-                .map(array ->  array[3]).toList().stream().mapToDouble(Double::doubleValue).toArray();
 
-        SimulationResults results = new SimulationResults(coordinates, speed, angle, aquadron.getStopTime());
+        SimulationResults results = new SimulationResults(states, aquadron.getStopTime());
+
         return ResponseEntity.ok(results);
     }
 
     @GetMapping("/state")
-    public ResponseEntity<Aquadron> getAquadronState() {
+    public ResponseEntity<DronState> getAquadronState() {
         if (aquadron == null) {
             return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.ok(aquadron);
+        return ResponseEntity.ok(new DronState(aquadron));
     }
 }

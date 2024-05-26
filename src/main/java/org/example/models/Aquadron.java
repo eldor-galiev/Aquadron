@@ -1,4 +1,4 @@
-package org.example.domain;
+package org.example.models;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -24,7 +24,7 @@ public class Aquadron {
     private RealMatrix x;
     private RealMatrix y;
     private double[] targetPoint;
-    private double speed;
+    private double targetSpeed;
     private RealMatrix R;
     private RealMatrix Fd;
     private final RealMatrix Fv = new Array2DRowRealMatrix(new double[] {0, 0, 0});
@@ -76,11 +76,15 @@ public class Aquadron {
 
         double[] startY = this.y.transpose().getRow(0);
         double[] startX = this.x.transpose().getRow(0);
-        System.out.println(startY);
 
         double[] y0 = DoubleStream.concat(DoubleStream.of(startY), DoubleStream.of(startX)).toArray();
 
         rk.integrate(ode, 0.0, y0, t, y0);
+
+        double[] lastState = states.get(states.size() - 1);
+
+        y.setColumn(0, new double[] {lastState[0], lastState[1], lastState[2]});
+        x.setColumn(0, new double[] {lastState[3], lastState[4], lastState[5]});
 
         return states;
     }
