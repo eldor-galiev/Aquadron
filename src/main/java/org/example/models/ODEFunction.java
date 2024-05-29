@@ -8,18 +8,35 @@ import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.MatrixUtils;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.ode.FirstOrderDifferentialEquations;
-import org.apache.commons.math3.ode.FirstOrderIntegrator;
-import org.apache.commons.math3.ode.nonstiff.ClassicalRungeKuttaIntegrator;
 
+/**
+ * Класс, представляющий обыкновенное дифференциального уравнения (ODE) для системы {@link Aquadron}.
+ * <p>
+ * Эта функция вычисляет производные переменных состояния относительно времени.
+ * Она реализует интерфейс {@link FirstOrderDifferentialEquations}.
+ */
 @AllArgsConstructor
 public class ODEFunction implements FirstOrderDifferentialEquations {
     private final Aquadron aquadron;
 
+    /**
+     * Получает размерность системы ODE.
+     * @return Размерность системы ODE.
+     */
     @Override
     public int getDimension() {
         return 6;
     }
 
+    /**
+     * Вычисляет производные переменных состояния относительно времени.
+     *
+     * @param t     Текущее значение независимой переменной (время).
+     * @param y     Текущие значения переменных состояния.
+     * @param yDot  Массив, куда будут сохранены вычисленные производные.
+     * @throws MaxCountExceededException  если количество оценок превышает максимум.
+     * @throws DimensionMismatchException если размерности массивов не соответствуют размерности системы ODE.
+     */
     @Override
     public void computeDerivatives(double t, double[] y, double[] yDot) throws MaxCountExceededException, DimensionMismatchException {
         RealMatrix Y = new Array2DRowRealMatrix(new double[] {y[0], y[1], y[2]});
@@ -48,9 +65,15 @@ public class ODEFunction implements FirstOrderDifferentialEquations {
         yDot[3] = newX.getEntry(0,0);
         yDot[4] = newX.getEntry(1,0);
         yDot[5] = newX.getEntry(2,0);
-
     }
 
+    /**
+     * Вычисляет матрицу ошибок, используемую в алгоритме управления.
+     *
+     * @param Y Текущие значения переменных состояния, связанных с позицией.
+     * @param X Текущие значения переменных состояния, связанных со скоростью.
+     * @return Матрица ошибок.
+     */
     private RealMatrix calculateErrorMatrix(RealMatrix Y, RealMatrix X) {
         double T1 = 25;
         double T2 = 10;
@@ -70,7 +93,12 @@ public class ODEFunction implements FirstOrderDifferentialEquations {
         return new Array2DRowRealMatrix(errors);
     }
 
-
+    /**
+     * Вычисляет желаемое значение угла.
+     *
+     * @param Y Текущие значения координат.
+     * @return Желаемое значение угла.
+     */
     private double calculateDesiredY3(RealMatrix Y) {
         double y10 = aquadron.getTargetPoint()[0];
         double y1 = Y.getEntry(0, 0);
@@ -78,31 +106,5 @@ public class ODEFunction implements FirstOrderDifferentialEquations {
         double y2 = Y.getEntry(1, 0);
 
         return  -1 * new Atan().value((y20 - y2) / (y10 - y1));
-    }
-
-    private double calculateDeltaY3() {
-        double Txi = 10.0;
-        double beta0 = 1.0;
-        double xi0 = 1.0;
-        FirstOrderDifferentialEquations ode = new FirstOrderDifferentialEquations() {
-            @Override
-            public int getDimension() {
-                return 1;
-            }
-
-            @Override
-            public void computeDerivatives(double t, double[] xi, double[] xiDot) {
-                double beta = Txi + beta0;
-                xiDot[0] = -(Txi + beta) * xi[0] + beta;
-            }
-        };
-
-        double[] xiInitial = {xi0};
-        double[] xiFinal = new double[1];
-
-        FirstOrderIntegrator integrator = new ClassicalRungeKuttaIntegrator(0.001);
-        integrator.integrate(ode, 0.0, xiInitial, 10.0, xiFinal);
-
-        return Math.max(-Math.PI / 2, Math.min(xiFinal[0], Math.PI / 2));
     }
 }

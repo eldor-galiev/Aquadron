@@ -10,12 +10,21 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Класс-контроллер, принимающий на микросервис по управлению движения дрона.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/aquadron")
 public class ControlApi {
     private Aquadron aquadron;
 
+    /**
+     * Метод для создания дрона с заданными параметрами.
+     * <p>
+     * Принимает POST запросы на адрес "/aquadron/create".
+     * @param request Объект c данными для инициализации дрона
+     */
     @PostMapping("/create")
     public void create(@RequestBody DronInitializationRequest request) {
         this.aquadron = new Aquadron(
@@ -29,6 +38,15 @@ public class ControlApi {
         );
     }
 
+    /**
+     * Метод для вычисления маршрута дрона к целевым координатам.
+     * <p>
+     * Принимает GET запросы на endpoint "/aquadron/simulate".
+     * @param targetY1 координата X целевой точки
+     * @param targetY2 координата Y целевой точки
+     * @param targetSpeed максимальная скорость движения к точке
+     * @return {@link SimulationResults} - результаты симуляции движения дрона
+     */
     @GetMapping("/simulate")
     public ResponseEntity<SimulationResults> simulate(@RequestParam double targetY1, @RequestParam double targetY2, @RequestParam double targetSpeed) {
         double t = 100.0;
@@ -43,11 +61,16 @@ public class ControlApi {
                 .map(array -> new double[]{array[0], array[1], array[2], array[3]})
                 .toList();
 
-        SimulationResults results = new SimulationResults(states, aquadron.getStopTime());
-
+        SimulationResults results = new SimulationResults(states, aquadron.getStopTime(), step);
         return ResponseEntity.ok(results);
     }
 
+    /**
+     * Метод для получения текущего состояния дрона.
+     * <p>
+     *  Принимает GET запросы на endpoint "/aquadron/state".
+     * @return {@link DronState} - текущее состояние аппарата
+     */
     @GetMapping("/state")
     public ResponseEntity<DronState> getAquadronState() {
         if (aquadron == null) {
