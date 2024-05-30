@@ -13,6 +13,8 @@ import java.util.List;
 /**
  * Класс-контроллер, принимающий на микросервис по управлению движения дрона.
  */
+
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/aquadron")

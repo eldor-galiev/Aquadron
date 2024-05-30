@@ -16,19 +16,19 @@ public class SimulationResults {
     private double[][] coordinates;
 
     /**
-     * Скорость дрона на каждом шаге симуляции.
-     */
-    private double[] speed;
-
-    /**
      * Угол рысканья дрона на каждом шаге симуляции.
      */
-    private double[] angle;
+    private double angle;
 
     /**
-     * Время на каждом шаге симуляции.
+     * Скорость дрона на каждом шаге симуляции.
      */
-    private double[] time;
+    private double speed;
+
+    /**
+     * Конечное время симуляции.
+     */
+    private double time;
 
     /**
      * Конструктор класса SimulationResults.
@@ -41,13 +41,14 @@ public class SimulationResults {
         coordinates = states.stream()
                 .map(arr -> new double[]{arr[0], arr[1]})
                 .toArray(double[][]::new);
-        speed = states.stream()
-                .map(array ->  array[2]).toList().stream()
-                .mapToDouble(Double::doubleValue).toArray();
         angle = states.stream()
+                .map(array ->  array[2]).toList().stream()
+                .mapToDouble(Double::doubleValue).toArray()[states.size() - 1];
+        speed = states.stream()
                 .map(array ->  array[3]).toList().stream()
-                .mapToDouble(Double::doubleValue).toArray();
+                .mapToDouble(Double::doubleValue).toArray()[states.size() - 1];
         time = DoubleStream.iterate(0, t -> t <= stopTime, t -> t + step)
-                .toArray();
+                .toArray()[states.size() - 1];
+        time = (double) Math.round(time * 1000) / 1000;
     }
 }
