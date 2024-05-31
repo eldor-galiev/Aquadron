@@ -21,12 +21,12 @@ public class SimulationResults {
     private double angle;
 
     /**
-     * Скорость дрона на каждом шаге симуляции.
+     * Конечная скорость дрона.
      */
     private double speed;
 
     /**
-     * Конечное время симуляции.
+     * Конечное время маршрута.
      */
     private double time;
 
