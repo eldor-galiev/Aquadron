@@ -29,14 +29,20 @@ public class ControlApi {
      */
     @PostMapping("/create")
     public void create(@RequestBody DronInitializationRequest request) {
+        double[] coordsY = new double[] {request.getCoordX(), request.getCoordY(), 0};
+        double[] coordsX = new double[] {0, 0, 0};
+
+        double cx1 = 0.1;
+        double cx2 = 0.7;
+        double mx3 = 0.2;
         this.aquadron = new Aquadron(
-                request.getCoordsY(),
-                request.getCoordsX(),
+                coordsY,
+                coordsX,
                 request.getWeight(),
                 request.getJ(),
-                request.getCx1(),
-                request.getCx2(),
-                request.getMx3()
+                cx1,
+                cx2,
+                mx3
         );
     }
 

@@ -12,14 +12,14 @@ import lombok.Setter;
 @Setter
 public class DronInitializationRequest {
     /**
-     * Начальные координаты Y.
+     * Начальные координаты Y1.
      */
-    private double[] coordsY;
+    private double coordX;
 
     /**
-     * Начальные координаты X.
+     * Начальные координаты Y2.
      */
-    private double[] coordsX;
+    private double coordY;
 
     /**
      * Вес дрона.
@@ -30,19 +30,4 @@ public class DronInitializationRequest {
      * Момент инерции дрона.
      */
     private double J;
-
-    /**
-     * Коэффициент сопротивления по оси X1.
-     */
-    private double cx1;
-
-    /**
-     * Коэффициент сопротивления по оси X2.
-     */
-    private double cx2;
-
-    /**
-     * Коэффициент сопротивления по оси X3.
-     */
-    private double mx3;
 }
